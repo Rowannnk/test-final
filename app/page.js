@@ -1,101 +1,170 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [courses, setCourses] = useState([]);
+  const [courseName, setCourseName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [credits, setCredits] = useState(0);
+  const [editId, setEditId] = useState(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+  const fetchCourses = async () => {
+    const res = await fetch("/api/courses/course", { cache: "no-store" });
+    const data = await res.json();
+    setCourses(data);
+  };
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const calculateGPA = () => {
+    const gradePoints = {
+      A: 4.0,
+      B: 3.0,
+      C: 2.0,
+      D: 1.0,
+      F: 0.0,
+    };
+
+    let totalCredits = 0;
+    let totalPoints = 0;
+
+    courses.forEach((course) => {
+      totalCredits += course.credits;
+      totalPoints += gradePoints[course.grade] * course.credits;
+    });
+
+    return totalCredits ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+  };
+
+  const addOrUpdateCourse = async () => {
+    const newCourse = { name: courseName, grade, credits: Number(credits) };
+
+    if (editId) {
+      await fetch(`/api/courses/update/${editId}`, {
+        cache: "no-store",
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCourse),
+      });
+
+      setCourses(
+        courses.map((course) =>
+          course._id === editId ? { ...course, ...newCourse } : course
+        )
+      );
+    } else {
+      const res = await fetch("/api/courses/create", {
+        cache: "no-store",
+
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCourse),
+      });
+
+      const data = await res.json();
+      setCourses([...courses, data]);
+    }
+    fetchCourses();
+    setCourseName("");
+    setGrade("");
+    setCredits(0);
+    setEditId(null);
+  };
+
+  const deleteCourse = async (id) => {
+    await fetch(`/api/courses/delete/${id}`, {
+      cache: "no-store",
+      method: "DELETE",
+    });
+    setCourses(courses.filter((course) => course._id !== id));
+    fetchCourses();
+  };
+
+  const startEditCourse = (course) => {
+    setCourseName(course.name);
+    setGrade(course.grade);
+    setCredits(course.credits);
+    setEditId(course._id);
+    fetchCourses();
+  };
+
+  return (
+    <div className="max-w-lg mx-auto mt-10 p-6 border rounded-lg shadow-lg bg-white">
+      <h1 className="text-2xl font-bold text-center mb-4">GPA Calculator</h1>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Course Name"
+          value={courseName}
+          onChange={(e) => setCourseName(e.target.value)}
+          className="block w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <input
+          type="text"
+          placeholder="Grade (A-F)"
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+          className="block w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <input
+          type="number"
+          placeholder="Credits"
+          value={credits}
+          onChange={(e) => setCredits(e.target.value)}
+          className="block w-full p-2 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={addOrUpdateCourse}
+          disabled={!courseName || !grade || credits <= 0}
+          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200"
         >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {editId ? "Update Course" : "Add Course"}
+        </button>
+      </div>
+
+      <h2 className="text-xl font-semibold mb-2">Courses</h2>
+
+      {/* Courses Table */}
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-gray-100 border-b">
+            <th className="p-2 border">Course Name</th>
+            <th className="p-2 border">Grade</th>
+            <th className="p-2 border">Credits</th>
+            <th className="p-2 border">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {courses.map((course) => (
+            <tr key={course._id} className="border-b">
+              <td className="p-2 border">{course.name}</td>
+              <td className="p-2 border">{course.grade}</td>
+              <td className="p-2 border">{course.credits}</td>
+              <td className="p-2 border flex justify-center space-x-4">
+                <button
+                  onClick={() => startEditCourse(course)}
+                  className="text-blue-600 hover:text-blue-800 transition duration-200"
+                >
+                  <FaEdit />
+                </button>
+                <button
+                  onClick={() => deleteCourse(course._id)}
+                  className="text-red-600 hover:text-red-800 transition duration-200"
+                >
+                  <FaTrash />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2 className="text-xl font-semibold mt-4">
+        Current GPA: {calculateGPA()}
+      </h2>
     </div>
   );
 }
