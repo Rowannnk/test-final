@@ -9,15 +9,19 @@ export default function Home() {
   const [credits, setCredits] = useState(0);
   const [editId, setEditId] = useState(null);
 
+  // Fetch courses from the backend
   const fetchCourses = async () => {
     const res = await fetch(`/api/courses/course`, { cache: "no-store" });
     const data = await res.json();
     setCourses(data);
   };
+
+  // Initial fetch of courses when the component loads
   useEffect(() => {
     fetchCourses();
   }, []);
 
+  // Calculate GPA based on courses
   const calculateGPA = () => {
     const gradePoints = {
       A: 4.0,
@@ -38,56 +42,55 @@ export default function Home() {
     return totalCredits ? (totalPoints / totalCredits).toFixed(2) : "0.00";
   };
 
+  // Add or update a course
   const addOrUpdateCourse = async () => {
     const newCourse = { name: courseName, grade, credits: Number(credits) };
 
     if (editId) {
+      // Update course
       await fetch(`/api/courses/update/${editId}`, {
         cache: "no-store",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newCourse),
       });
-
-      setCourses(
-        courses.map((course) =>
-          course._id === editId ? { ...course, ...newCourse } : course
-        )
-      );
     } else {
-      const res = await fetch("/api/courses/create", {
+      // Create new course
+      await fetch("/api/courses/create", {
         cache: "no-store",
-
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newCourse),
       });
-
-      const data = await res.json();
-      setCourses([...courses, data]);
     }
+
+    // After add or update, fetch the latest courses
     fetchCourses();
+
+    // Clear form
     setCourseName("");
     setGrade("");
     setCredits(0);
     setEditId(null);
   };
 
+  // Delete a course
   const deleteCourse = async (id) => {
     await fetch(`/api/courses/delete/${id}`, {
       cache: "no-store",
       method: "DELETE",
     });
-    setCourses(courses.filter((course) => course._id !== id));
+
+    // Fetch latest courses after delete
     fetchCourses();
   };
 
+  // Start editing a course
   const startEditCourse = (course) => {
     setCourseName(course.name);
     setGrade(course.grade);
     setCredits(course.credits);
     setEditId(course._id);
-    fetchCourses();
   };
 
   return (
@@ -127,7 +130,6 @@ export default function Home() {
 
       <h2 className="text-xl font-semibold mb-2">Courses</h2>
 
-      {/* Courses Table */}
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-gray-100 border-b">
