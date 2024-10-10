@@ -10,7 +10,10 @@ export default function Home() {
   const [editId, setEditId] = useState(null);
 
   const fetchCourses = async () => {
-    const res = await fetch("/api/courses/course", { cache: "no-store" });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/courses/course`,
+      { cache: "no-store" }
+    );
     const data = await res.json();
     setCourses(data);
   };
@@ -42,12 +45,15 @@ export default function Home() {
     const newCourse = { name: courseName, grade, credits: Number(credits) };
 
     if (editId) {
-      await fetch(`/api/courses/update/${editId}`, {
-        cache: "no-store",
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCourse),
-      });
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/courses/update/${editId}`,
+        {
+          cache: "no-store",
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newCourse),
+        }
+      );
 
       setCourses(
         courses.map((course) =>
@@ -55,13 +61,16 @@ export default function Home() {
         )
       );
     } else {
-      const res = await fetch("/api/courses/create", {
-        cache: "no-store",
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/courses/create`,
+        {
+          cache: "no-store",
 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCourse),
-      });
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newCourse),
+        }
+      );
 
       const data = await res.json();
       setCourses([...courses, data]);
@@ -74,10 +83,13 @@ export default function Home() {
   };
 
   const deleteCourse = async (id) => {
-    await fetch(`/api/courses/delete/${id}`, {
-      cache: "no-store",
-      method: "DELETE",
-    });
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/courses/delete/${id}`,
+      {
+        cache: "no-store",
+        method: "DELETE",
+      }
+    );
     setCourses(courses.filter((course) => course._id !== id));
     fetchCourses();
   };
