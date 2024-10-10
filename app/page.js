@@ -11,7 +11,7 @@ export default function Home() {
 
   // Fetch courses from the backend
   const fetchCourses = async () => {
-    const res = await fetch(`/api/courses/course`, { cache: "no-store" });
+    const res = await fetch(`/api/courses`, { cache: "no-store" });
     const data = await res.json();
     setCourses(data);
   };
@@ -48,7 +48,7 @@ export default function Home() {
 
     if (editId) {
       // Update course
-      await fetch(`/api/courses/update/${editId}`, {
+      await fetch(`/api/courses/${editId}`, {
         cache: "no-store",
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ export default function Home() {
       });
     } else {
       // Create new course
-      await fetch("/api/courses/create", {
+      await fetch("/api/courses", {
         cache: "no-store",
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,7 +76,7 @@ export default function Home() {
 
   // Delete a course
   const deleteCourse = async (id) => {
-    await fetch(`/api/courses/delete/${id}`, {
+    await fetch(`/api/courses/${id}`, {
       cache: "no-store",
       method: "DELETE",
     });
